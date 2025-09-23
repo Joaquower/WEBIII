@@ -1,0 +1,42 @@
+services:
+  mongo:
+    image: mirror.gcr.io/library/mongo:latest
+    restart: always
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin_user 
+      MONGO_INITDB_ROOT_PASSWORD: web3
+    ports:
+      - "27020:27017"
+    networks:
+      - mongo-network
+
+  calculadora:
+    image: calculadora-fast-api
+    build: ./backend
+    ports:
+      - "8089:8000"
+    volumes:
+      - ./backend:/app
+    depends_on:
+      - mongo
+    networks:
+      - mongo-network
+
+  frontend:
+    image: frontend-react
+    build: ./frontend
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    environment:
+      - CHOKIDAR_USEPOLLING=true
+    depends_on:
+      - calculadora
+    networks:
+      - mongo-network
+
+networks:
+  mongo-network:
+    driver: bridge
