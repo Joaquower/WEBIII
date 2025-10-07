@@ -37,21 +37,27 @@ def test_sum_numbers(monkeypatch, a, b, expected):
     assert saved["result"] == expected
 
 def test_historial(monkeypatch):
-    monkeypatch.setattr(main, "collection_historial", fake_collection_historial)
-    response= client.get("/calculadora/historial")
-    assert response.status_code ==200
+    # Prepare a fake collection with some documents
+    fake_collection = mock_collection
+    fake_collection.delete_many({})
+    doc1 = {"a": 1, "b": 2, "result": 3, "date": datetime.datetime.utcnow()}
+    doc2 = {"a": 5, "b": 7, "result": 12, "date": datetime.datetime.utcnow()}
+    fake_collection.insert_many([doc1, doc2])
 
-    expected_data = list(fake_collection_historial.find({}))
-    historial = []
+    # Patch main.collection_historial to use the fake one
+    monkeypatch.setattr(main, "collection_historial", fake_collection)
+
+    response = client.get("/calculator/history")
+    assert response.status_code == 200
+
+    expected_data = list(fake_collection.find().sort("date", -1).limit(10))
+    history = []
     for document in expected_data:
-        historial.append({
-            "a": document["a"],
-            "b": document["b"],
-            "resultado": document["resultado"],
-            "date": document["date"].isoformat(),
+        history.append({
+            "a": document.get("a"),
+            "b": document.get("b"),
+            "result": document.get("result"),
+            "date": document.get("date").isoformat() if document.get("date") else None,
         })
-    
-    print(f"DEBUG expected_data: {historial}")
-    print(f"DEBUG expected_data: {response.json()}")
 
-    assert response.json() == {"historial":historial}
+    assert response.json() == {"history": history}
