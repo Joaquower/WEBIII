@@ -1,4 +1,5 @@
-name: Build and Push Docker Image
+name: Build and Push Backend Docker Image
+
 on:
   push:
     branches:
@@ -6,6 +7,8 @@ on:
       - 'release/*'
     tags:
       - 'v*'
+    paths:
+      - 'backend/**' # <-- IMPORTANTE: Solo se ejecuta si hay cambios aquí
 
 jobs:
   build:
@@ -27,7 +30,7 @@ jobs:
       - name: Determine image tag
         id: vars
         run: |
-          # Use GITHUB_REF to detect tags (refs/tags/<tag>)
+          # Usa GITHUB_REF para detectar si el push fue un tag
           if [[ "$GITHUB_REF" == refs/tags/* ]]; then
             TAG=${GITHUB_REF#refs/tags/}
             echo "TAG=$TAG" >> $GITHUB_ENV
@@ -37,13 +40,14 @@ jobs:
 
       - name: Determine image name (lowercase)
         run: |
-          # Lowercase the repository (owner/repo) so Docker tag is valid
-          IMAGE=ghcr.io/$(echo "$GITHUB_REPOSITORY" | tr '[:upper:]' '[:lower:]')
+          # Convierte el nombre del repositorio a minúsculas y añade el sufijo /backend
+          IMAGE=ghcr.io/$(echo "$GITHUB_REPOSITORY" | tr '[:upper:]' '[:lower:]')/backend
           echo "IMAGE=$IMAGE" >> $GITHUB_ENV
 
       - name: Build Docker image
         run: |
           echo "Building image: $IMAGE:$TAG"
+          # Construye la imagen desde el directorio ./backend
           docker build -t $IMAGE:$TAG ./backend
 
       - name: Push Docker image
