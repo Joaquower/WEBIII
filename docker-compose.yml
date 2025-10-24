@@ -3,7 +3,7 @@ services:
     image: mirror.gcr.io/library/mongo:latest
     restart: always
     environment:
-      MONGO_INITDB_ROOT_USERNAME: admin_user 
+      MONGO_INITDB_ROOT_USERNAME: admin_user
       MONGO_INITDB_ROOT_PASSWORD: web3
     ports:
       - "27020:27017"
@@ -11,32 +11,52 @@ services:
       - mongo-network
 
   calculadora:
-    image: calculadora-fast-api
-    build: ./backend
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    image: ghcr.io/joaquower/webiii/backend:latest
     ports:
       - "8089:8000"
-    volumes:
-      - ./backend:/app
     depends_on:
       - mongo
     networks:
       - mongo-network
 
   frontend:
-    image: frontend-react
-    build: ./frontend
+    image: ghcr.io/joaquower/webiii/frontend:latest
     ports:
       - "5173:5173"
-    volumes:
-      - ./frontend:/app
-      - /app/node_modules
-    environment:
-      - CHOKIDAR_USEPOLLING=true
     depends_on:
       - calculadora
     networks:
       - mongo-network
 
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    volumes:
+      - ./monitoring/prometheus.yaml:/etc/prometheus/prometheus.yaml
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yaml"
+    ports:
+      - "9090:9090"
+    networks:
+      - mongo-network
+    depends_on:
+      - calculadora
+    pull_policy: always
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    ports:
+      - "3001:3000"
+    networks:
+      - mongo-network
+    depends_on:
+      - prometheus
+
 networks:
   mongo-network:
     driver: bridge
+    name: practicas_mongo-network  # nombre explícito para que monitoring pueda conectarse

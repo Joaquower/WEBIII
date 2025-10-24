@@ -1,0 +1,7 @@
+global:
+  scrape_interval: 5s  # cada 5 segundos
+
+scrape_configs:
+  - job_name: "fastapi-backend"
+    static_configs:
+      - targets: ["webiii-calculadora-1:8000"]  # nombre del servicio y puerto

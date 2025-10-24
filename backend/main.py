@@ -2,6 +2,7 @@ import datetime
 from fastapi import FastAPI
 from pymongo import MongoClient
 from fastapi.middleware.cors import CORSMiddleware
+from prometheus_fastapi_instrumentator import Instrumentator
 
 app = FastAPI()
 
@@ -12,6 +13,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Prometheus instrumentation - expone métricas en /metrics
+Instrumentator().instrument(app).expose(app)
 
 # Use service name + credentials from docker-compose
 client = MongoClient("mongodb://admin_user:web3@mongo:27017/")
